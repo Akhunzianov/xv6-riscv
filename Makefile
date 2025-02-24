@@ -107,9 +107,6 @@ $U/usys.S : $U/usys.pl
 $U/usys.o : $U/usys.S
 	$(CC) $(CFLAGS) -c -o $U/usys.o $U/usys.S
 
-# user/sum_asm.o: user/sum_asm.S
-# 	$(CC) $(CFLAGS) -c -o user/sum_asm.o user/sum_asm.S
-
 $U/_forktest: $U/forktest.o $(ULIB)
 	# forktest has less library code linked in - needs to be small
 	# in order to be able to max out the proc table.
