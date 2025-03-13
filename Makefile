@@ -141,6 +141,9 @@ UPROGS=\
 	$U/_zombie\
 	$U/_sum\
 	$U/_sum_asm\
+	$U/_fork_wait\
+	$U/_fork_kill\
+	$U/_pipe\
 
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)
