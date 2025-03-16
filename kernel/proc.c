@@ -5,6 +5,7 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
+#include "procinfo.h" 
 
 struct cpu cpus[NCPU];
 
@@ -692,4 +693,64 @@ procdump(void)
     printf("%d %s %s", p->pid, state, p->name);
     printf("\n");
   }
+}
+
+uint64
+ps_listinfo_k(uint64 plist, int lim)
+{
+  if (plist == 0){
+    int total = 0;
+    acquire(&wait_lock);
+    for (int i = 0; i < NPROC; i++) {
+      struct proc *p = &proc[i];
+      acquire(&p->lock);
+      if(p->state != UNUSED)
+        total++;
+      release(&p->lock);
+    }
+    release(&wait_lock);
+
+    return total;
+  }
+  if (lim <= 0){
+    return -1;
+  }
+
+  int cnt = 0;
+  acquire(&wait_lock);
+  for (int i = 0; i < NPROC; i++) {
+    struct proc *p = &proc[i];
+    acquire(&p->lock);
+    if(p->state == UNUSED){
+      release(&p->lock);
+      continue;
+    }
+    if (cnt == lim){
+      release(&p->lock);
+      release(&wait_lock);
+      return -2;
+    }
+    struct procinfo temp;
+    temp.pid = p->pid;
+    safestrcpy(temp.name, p->name, sizeof(temp.name));
+    temp.state = p->state;
+    if (p->parent) {
+      temp.ppid = p->parent->pid;
+      safestrcpy(temp.pname, p->parent->name, sizeof(temp.pname));
+    } 
+    else {
+      temp.ppid = 0;
+      safestrcpy(temp.pname, "None", sizeof(temp.pname));
+    }
+    release(&p->lock);
+
+    if (copyout(myproc()->pagetable, plist + (cnt * sizeof(temp)), (char*)&temp, sizeof(temp)) < 0) {
+      release(&wait_lock);
+      return -3;
+    }
+    cnt++;
+  }
+  release(&wait_lock);
+
+  return cnt;
 }
