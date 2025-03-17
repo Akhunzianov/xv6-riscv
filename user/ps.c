@@ -3,6 +3,8 @@
 #include "user.h"
 #include "kernel/procinfo.h"
 
+char *procstatelist[6] = { "UNUSED", "USED", "SLEEPING", "RUNNABLE", "RUNNING", "ZOMBIE" };
+
 int main(void) {
   int n = ps_listinfo(0, 0); 
   if (n < 0) {
@@ -33,8 +35,8 @@ int main(void) {
   }
 
   for (int i = 0; i < rc; i++) {
-    printf("pid=%d ppid=%d name=%s parent=%s state=%d\n",
-           buf[i].pid, buf[i].ppid, buf[i].name, buf[i].pname, buf[i].state);
+    printf("pid=%d ppid=%d name=%s parent=%s state=%s\n",
+           buf[i].pid, buf[i].ppid, buf[i].name, buf[i].pname, procstatelist[buf[i].state]);
   }
   free(buf);
   exit(0);

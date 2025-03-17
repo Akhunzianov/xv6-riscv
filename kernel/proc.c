@@ -721,7 +721,7 @@ ps_listinfo_k(uint64 plist, int lim)
   for (int i = 0; i < NPROC; i++) {
     struct proc *p = &proc[i];
     acquire(&p->lock);
-    if(p->state == UNUSED){
+    if(p->state == UNUSED || p->state == USED) {
       release(&p->lock);
       continue;
     }
