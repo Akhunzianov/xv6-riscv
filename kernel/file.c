@@ -73,7 +73,11 @@ fileclose(struct file *f)
   f->type = FD_NONE;
   release(&ftable.lock);
 
-  if(ff.type == FD_PIPE){
+  if (ff.type == FD_MUTEX) {
+    f->type = FD_MUTEX;
+    mutexclose(f);
+    f->type = FD_NONE;
+  } else if(ff.type == FD_PIPE){
     pipeclose(ff.pipe, ff.writable);
   } else if(ff.type == FD_INODE || ff.type == FD_DEVICE){
     begin_op();
@@ -90,7 +94,9 @@ filestat(struct file *f, uint64 addr)
   struct proc *p = myproc();
   struct stat st;
   
-  if(f->type == FD_INODE || f->type == FD_DEVICE){
+  if (f->type == FD_MUTEX) {
+    return -1;
+  } else if(f->type == FD_INODE || f->type == FD_DEVICE){
     ilock(f->ip);
     stati(f->ip, &st);
     iunlock(f->ip);
@@ -111,7 +117,9 @@ fileread(struct file *f, uint64 addr, int n)
   if(f->readable == 0)
     return -1;
 
-  if(f->type == FD_PIPE){
+  if (f->type == FD_MUTEX) {
+    return -1;
+  } else if(f->type == FD_PIPE){
     r = piperead(f->pipe, addr, n);
   } else if(f->type == FD_DEVICE){
     if(f->major < 0 || f->major >= NDEV || !devsw[f->major].read)
@@ -139,7 +147,9 @@ filewrite(struct file *f, uint64 addr, int n)
   if(f->writable == 0)
     return -1;
 
-  if(f->type == FD_PIPE){
+  if (f->type == FD_MUTEX) {
+    return -1;
+  } else if(f->type == FD_PIPE){
     ret = pipewrite(f->pipe, addr, n);
   } else if(f->type == FD_DEVICE){
     if(f->major < 0 || f->major >= NDEV || !devsw[f->major].write)
