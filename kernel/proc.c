@@ -704,7 +704,7 @@ ps_listinfo_k(uint64 plist, int lim)
     for (int i = 0; i < NPROC; i++) {
       struct proc *p = &proc[i];
       acquire(&p->lock);
-      if(p->state != UNUSED)
+      if(p->state != UNUSED || p->state == USED)
         total++;
       release(&p->lock);
     }
@@ -735,8 +735,10 @@ ps_listinfo_k(uint64 plist, int lim)
     safestrcpy(temp.name, p->name, sizeof(temp.name));
     temp.state = p->state;
     if (p->parent) {
+      acquire(&p->parent->lock);
       temp.ppid = p->parent->pid;
       safestrcpy(temp.pname, p->parent->name, sizeof(temp.pname));
+      release(&p->parent->lock);
     } 
     else {
       temp.ppid = 0;
