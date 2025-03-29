@@ -100,3 +100,15 @@ sys_add(void)
   argint(1, &y);
   return x + y;
 }
+
+extern uint64 ps_listinfo_k(uint64 uptr, int lim);
+
+uint64
+sys_ps_listinfo(void)
+{
+  uint64 plist; 
+  int lim;         
+  argaddr(0, &plist);
+  argint(1, &lim);
+  return ps_listinfo_k(plist, lim);
+}
