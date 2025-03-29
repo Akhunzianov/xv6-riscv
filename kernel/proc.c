@@ -700,7 +700,6 @@ ps_listinfo_k(uint64 plist, int lim)
 {
   if (plist == 0){
     int total = 0;
-    acquire(&wait_lock);
     for (int i = 0; i < NPROC; i++) {
       struct proc *p = &proc[i];
       acquire(&p->lock);
@@ -708,7 +707,6 @@ ps_listinfo_k(uint64 plist, int lim)
         total++;
       release(&p->lock);
     }
-    release(&wait_lock);
 
     return total;
   }
@@ -717,7 +715,6 @@ ps_listinfo_k(uint64 plist, int lim)
   }
 
   int cnt = 0;
-  acquire(&wait_lock);
   for (int i = 0; i < NPROC; i++) {
     struct proc *p = &proc[i];
     acquire(&p->lock);
@@ -727,7 +724,6 @@ ps_listinfo_k(uint64 plist, int lim)
     }
     if (cnt == lim){
       release(&p->lock);
-      release(&wait_lock);
       return -2;
     }
     struct procinfo temp;
@@ -735,10 +731,10 @@ ps_listinfo_k(uint64 plist, int lim)
     safestrcpy(temp.name, p->name, sizeof(temp.name));
     temp.state = p->state;
     if (p->parent) {
-      acquire(&p->parent->lock);
+      acquire(&wait_lock);
       temp.ppid = p->parent->pid;
       safestrcpy(temp.pname, p->parent->name, sizeof(temp.pname));
-      release(&p->parent->lock);
+      release(&wait_lock);
     } 
     else {
       temp.ppid = 0;
@@ -746,13 +742,10 @@ ps_listinfo_k(uint64 plist, int lim)
     }
     release(&p->lock);
 
-    if (copyout(myproc()->pagetable, plist + (cnt * sizeof(temp)), (char*)&temp, sizeof(temp)) < 0) {
-      release(&wait_lock);
+    if (copyout(myproc()->pagetable, plist + (cnt * sizeof(temp)), (char*)&temp, sizeof(temp)) < 0)
       return -3;
-    }
     cnt++;
   }
-  release(&wait_lock);
 
   return cnt;
 }
