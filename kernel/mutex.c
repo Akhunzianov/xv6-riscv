@@ -25,6 +25,8 @@ mutexalloc(void)
     if (isLog)
         printf("log: Proc with pid %d succseded at filealloc at 0x%lx for mutex\n", myproc()->pid, (uint64)f);
     f->type = FD_MUTEX;
+    f->readable = 0;
+    f->writable = 0;
     f->mutex = (struct sleeplock *)kalloc();
     if (f->mutex == 0) {
         fileclose(f);
@@ -46,7 +48,11 @@ mutexclose(struct file *f)
             printf("log: tried closing not a mutex file at 0x%lx as mutex file\n", (uint64)f);
         return;
     }
-    if (f->mutex->locked && f->mutex->pid == myproc()->pid) 
+    int p;
+    acquire(&f->mutex->lk);
+    p = f->mutex->locked && f->mutex->pid == myproc()->pid;
+    release(&f->mutex->lk);
+    if (p) 
         releasesleep(f->mutex);
     if (isLog)
         printf("log: Proc with pid %d unlocked mutex, starting kfree for mutex at 0x%lx file at 0x%lx\n", myproc()->pid, (uint64)f->mutex, (uint64)f);
