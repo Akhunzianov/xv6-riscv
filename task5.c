@@ -89,7 +89,7 @@ void handle_signal(int sig) {
             if (!run_as_daemon && !is_switched_to_daemon) 
                 is_switched_to_daemon = 1; 
             break;
-        case SIGQUIT:
+        default:
             break;
     }
 }
@@ -169,6 +169,8 @@ int read_from_fifo(int fd) {
                     fprintf(log_stream, "SIGINT: дочитываю FIFO...\n");
                     continue;
                 }
+                if (is_switched_to_daemon && !run_as_daemon)
+                    daemonize_on_sighup();
                 if (alarm_flag)
                     exec_alarm();
                 continue;
