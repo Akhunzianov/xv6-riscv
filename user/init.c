@@ -23,6 +23,12 @@ main(void)
   dup(0);  // stdout
   dup(0);  // stderr
 
+  mkdir("/dev");
+  mknod("/dev/null", PS_DEV, 0);
+  mknod("/dev/zero", PS_DEV, 1);
+  mknod("/dev/urandom", PS_DEV, 2);
+  mknod("/dev/nullstat", PS_DEV, 3);
+
   for(;;){
     printf("init: starting sh\n");
     pid = fork();

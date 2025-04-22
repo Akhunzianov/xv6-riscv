@@ -6,6 +6,8 @@
 
 volatile static int started = 0;
 
+extern void devps_init(void);
+
 // start() jumps here in supervisor mode on all CPUs.
 void
 main()
@@ -29,6 +31,7 @@ main()
     fileinit();      // file table
     virtio_disk_init(); // emulated hard disk
     userinit();      // first user process
+    devps_init();
     __sync_synchronize();
     started = 1;
   } else {
