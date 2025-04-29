@@ -100,3 +100,8 @@ sys_add(void)
   argint(1, &y);
   return x + y;
 }
+
+uint64
+sys_rtc(void) {
+  return rtc_read();
+}
