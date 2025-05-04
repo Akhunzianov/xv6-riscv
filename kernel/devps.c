@@ -12,6 +12,9 @@
 #define URANDOM 2
 #define NULLSTAT 3
 
+#define BUF_SIZE 512
+char null_buf[BUF_SIZE];
+
 struct pseudo {
   struct spinlock lock;
   uint64 seed;
@@ -29,29 +32,35 @@ int
 ps_read(int user_dst, uint64 dst, int n, short minor) 
 {
   int r = -1;
-  acquire(&devps.lock);
   switch (minor) {
     case NULL:
       r = 0;
       break;
     case ZERO:
-      for (int i = 0; i < n; i++) {
-        uint8 zero = 0;
-        if (either_copyout(user_dst, dst + i, &zero, 1) < 0) {
+      int cpy_n = n;
+      uint64 cur_dst = dst;
+      while (cpy_n > 0) {
+        int chunk = cpy_n < BUF_SIZE ? cpy_n : BUF_SIZE;
+        if (either_copyout(user_dst, cur_dst, null_buf, chunk) < 0) {
           r = -1;
           break;
         }
+        cur_dst += chunk;
+        cpy_n -= chunk;
       }
       r = n;
       break;
     case URANDOM:
+      acquire(&devps.lock);
       for (int i = 0; i < n; i++) {
         uint8 new = urandom_next();
         if (either_copyout(user_dst, dst + i, &new, 1) < 0) {
           r = -1;
+          release(&devps.lock);
           break;
         }
       }
+      release(&devps.lock);
       r = n;
       break;
     case NULLSTAT:
@@ -59,16 +68,18 @@ ps_read(int user_dst, uint64 dst, int n, short minor)
         r = -1;
         break;
       }
+      acquire(&devps.lock);
       if (either_copyout(user_dst, dst, &devps.cnt, n) < 0) {
         r = -1;
+        release(&devps.lock);
         break;
       }
+      release(&devps.lock);
       r = n;
       break;
     default:
       break;
   }
-  release(&devps.lock);
   
   return r;
 }
@@ -77,7 +88,6 @@ int
 ps_write(int user_src, uint64 src, int n, short minor)
 {
   int r = -1;
-  acquire(&devps.lock);
   switch (minor) {
     case NULL:
       r = n;
@@ -95,17 +105,20 @@ ps_write(int user_src, uint64 src, int n, short minor)
         r = -1;
         break;
       }
+      acquire(&devps.lock);
       devps.seed = nseed;
+      release(&devps.lock);
         r = n;
         break;
     case NULLSTAT:
+      acquire(&devps.lock);
       devps.cnt += n;
+      release(&devps.lock);
       r = n;
       break;
     default:
       break;
   }
-  release(&devps.lock);
 
   return r;
 }
@@ -114,6 +127,8 @@ void
 devps_init(void) 
 {
     initlock(&devps.lock, "dev");
+    for (int i = 0; i < BUF_SIZE; ++i)
+      null_buf[i] = 0;
     devps.seed = 1337; devps.cnt = 0;
     devsw[PS_DEV].read = ps_read;
     devsw[PS_DEV].write = ps_write;
