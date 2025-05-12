@@ -186,6 +186,7 @@ void            virtio_disk_rw(struct buf *, int);
 void            virtio_disk_intr(void);
 
 // rtc.c
+void            rtcinit(void);
 uint32          rtc_low(void);
 uint32          rtc_high(void);
 uint64          rtc_read(void);
