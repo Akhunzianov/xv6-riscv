@@ -23,6 +23,7 @@ char* sbrk(int);
 int sleep(int);
 int uptime(void);
 int add(int x, int y);
+long int rtc(void);
 
 // ulib.c
 int stat(const char*, struct stat*);
